@@ -1,3 +1,13 @@
+---
+title: YodEdit
+emoji: ✂️
+colorFrom: yellow
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # YodEdit: เว็บตัดต่อวิดีโออัตโนมัติ
 
 อัปโหลดวิดีโอ แล้วระบบจะตัดช่วงเงียบ ใส่ซับภาษาไทยแบบเด้งทีละคำ ซูมตามจังหวะ
@@ -68,6 +78,21 @@ python -m uvicorn server:app --port 8000
 ```
 python -m autocut clip.mp4 --aspect 9:16 16:9 --target 60
 ```
+
+## ขึ้นเซิร์ฟเวอร์ (Deploy)
+
+> ⚠️ ใช้กับ Vercel / Netlify ไม่ได้ เพราะเป็น Serverless: อัปโหลดได้ไม่เกิน 4.5 MB,
+> รันได้ไม่กี่นาที และขนาดแพ็กเกจเกิน 500 MB ต้องใช้บริการที่รัน Docker ค้างไว้ได้
+
+`Dockerfile` เตรียมทุกอย่างให้ครบ (โมเดลภาษาไทย + ฟอนต์ Kanit) ใช้ได้กับ:
+
+- **Hugging Face Spaces (ฟรี):** สร้าง Space แบบ Docker แล้วอัปโหลดไฟล์ใน repo นี้
+  (ส่วนหัว README นี้คือค่าตั้งค่าของ Space) ครั้งแรกจะ build ประมาณ 10–20 นาที
+- **Render / Railway / Fly.io:** เลือก Deploy จาก Dockerfile, ตั้งค่า port ผ่านตัวแปร `PORT`
+- **VPS:** `docker build -t yodedit . && docker run -p 7860:7860 yodedit`
+
+ตัวแปรที่ปรับได้: `KEEP_HOURS` (ลบไฟล์เก่าหลังกี่ชั่วโมง, ค่าเริ่มต้น 6),
+`MAX_UPLOAD_MB` (ขนาดไฟล์สูงสุด, ค่าเริ่มต้น 500), `AUTOCUT_DEVICE=cuda` (ถ้ามี GPU)
 
 ### โมเดลถอดเสียงภาษาไทย
 Whisper ปกติถอดภาษาไทยผิดเยอะ (มีภาษาอื่นปนออกมา) โปรแกรมจึงใช้ **Thonburian Whisper**

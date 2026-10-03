@@ -1,10 +1,19 @@
 """ขั้นตอนตัดต่ออัตโนมัติทั้งหมด"""
 import json
+import os
+import shutil
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 from . import edit_plan, render, sfx, silence, subtitles, transcribe
 from .ffmpeg_utils import probe, run
+
+
+def default_font():
+    """ใช้ Kanit ถ้ามีไฟล์ในโฟลเดอร์ fonts/ (Docker โหลดมาให้) ไม่งั้นใช้ฟอนต์ไทยของ Windows"""
+    if os.environ.get("YODEDIT_FONT"):
+        return os.environ["YODEDIT_FONT"]
+    return "Kanit" if (render.FONTS_DIR / "Kanit-Bold.ttf").exists() else "Leelawadee UI"
 
 
 @dataclass
@@ -25,7 +34,7 @@ class Options:
     sfx: bool = True
     normalize_audio: bool = True
     fps: int = 30
-    font: str = "Leelawadee UI"
+    font: str = field(default_factory=lambda: default_font())
 
     @classmethod
     def from_dict(cls, d):
@@ -119,6 +128,9 @@ def process(input_path, job_dir, opts: Options, progress=lambda pct, msg: None):
             mode=opts.reframe, fps=opts.fps, ass_name=ass_name, sfx_name=sfx_name,
             normalize=opts.normalize_audio, progress=shot_progress,
         )
+        # ลบไฟล์ช็อตชั่วคราว (ใหญ่กว่าผลลัพธ์หลายเท่า)
+        shutil.rmtree(job_dir / f"shots_{tag}", ignore_errors=True)
+        (job_dir / f"joined_{tag}.mkv").unlink(missing_ok=True)
         progress(base + span, f"[{aspect}] เสร็จแล้ว")
         outputs.append({"aspect": aspect, "video": video_name, "srt": srt_name})
 
