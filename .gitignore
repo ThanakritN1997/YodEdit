@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+# โมเดลไฟล์ใหญ่ สร้างเองด้วย setup_thai_model.bat
+models/
+# วิดีโอที่อัปโหลดและผลลัพธ์
+jobs/
+test/
+output/
+fonts/*.ttf
+fonts/*.otf

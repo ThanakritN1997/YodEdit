@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YodEdit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --text: #1d1c1a; --muted: #6b6862;
+    --line: #e4e1db; --accent: #e8590c; --accent-soft: #fdeee4; --ok: #2b8a3e; --err: #c92a2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151413; --panel: #1f1e1c; --text: #eceae6; --muted: #9a968f;
+            --line: #33312e; --accent: #ff7a33; --accent-soft: #3a2518; --ok: #69db7c; --err: #ff8787; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.6 "IBM Plex Sans Thai", "Leelawadee UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 32px 16px; text-align: center;
+          cursor: pointer; transition: .15s; color: var(--muted); }
+  .drop.over, .drop:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .drop strong { color: var(--text); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; }
+  .chip span { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; min-width: 88px;
+               padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 14px; }
+  .chip small { color: var(--muted); font-size: 12px; }
+  .chip input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+  .chip input:focus-visible + span { outline: 2px solid var(--accent); }
+  .shape { border: 2px solid currentColor; border-radius: 3px; opacity: .7; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 20px; }
+  label.row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
+  .field input, .field select { font: inherit; color: var(--text); background: var(--bg);
+               border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  details[open] summary { margin-bottom: 12px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 14px 20px; width: 100%;
+           background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .bar { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; margin: 12px 0 8px; }
+  .bar div { height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+  .msg { color: var(--muted); font-size: 14px; }
+  .err { color: var(--err); white-space: pre-wrap; font-size: 14px; }
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stats b { display: block; font-size: 22px; }
+  .stats span { color: var(--muted); font-size: 13px; }
+  .outs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .out video { width: 100%; max-height: 420px; background: #000; border-radius: 10px; }
+  .out a { color: var(--accent); font-size: 14px; margin-right: 12px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>✂️ YodEdit</h1>
+  <p class="sub">อัปโหลดวิดีโอ แล้วระบบจะตัดช่วงเงียบ ใส่ซับ ซูม ใส่เสียงเอฟเฟกต์ และแปลงขนาดให้อัตโนมัติ</p>
+
+  <form id="form">
+    <div class="card">
+      <h2>1. เลือกวิดีโอ</h2>
+      <div class="drop" id="drop">
+        <strong id="fileName">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก</strong>
+        MP4, MOV, MKV, WEBM
+      </div>
+      <input type="file" id="file" accept="video/*" hidden>
+    </div>
+
+    <div class="card">
+      <h2>2. ขนาดวิดีโอ (เลือกได้หลายขนาด)</h2>
+      <div class="chips" id="aspects">
+        <label class="chip"><input type="checkbox" value="9:16" checked><span><i class="shape" style="width:18px;height:32px"></i>9:16<small>TikTok · Reels</small></span></label>
+        <label class="chip"><input type="checkbox" value="16:9"><span><i class="shape" style="width:32px;height:18px"></i>16:9<small>YouTube</small></span></label>
+        <label class="chip"><input type="checkbox" value="1:1"><span><i class="shape" style="width:24px;height:24px"></i>1:1<small>Feed</small></span></label>
+        <label class="chip"><input type="checkbox" value="4:5"><span><i class="shape" style="width:22px;height:28px"></i>4:5<small>IG · FB Feed</small></span></label>
+      </div>
+      <div class="grid" style="margin-top:14px">
+        <label class="field">เมื่อสัดส่วนไม่ตรงกับต้นฉบับ
+          <select id="reframe">
+            <option value="crop">ครอปกลางภาพให้เต็มจอ (คลิปคนพูด)</option>
+            <option value="blur">ภาพเต็ม + พื้นหลังเบลอ (สไลด์ / วิว)</option>
+          </select>
+        </label>
+        <label class="field">ความยาวที่ต้องการ (วินาที, เว้นว่าง = ไม่จำกัด)
+          <input type="number" id="target" min="5" step="5" placeholder="เช่น 60">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. ตัวช่วยตัดต่อ</h2>
+      <div class="grid">
+        <label class="row"><input type="checkbox" id="cut_silence" checked> ตัดช่วงเงียบ / หยุดพูด</label>
+        <label class="row"><input type="checkbox" id="remove_fillers" checked> ตัดคำ "เอ่อ อ่า อืม"</label>
+        <label class="row"><input type="checkbox" id="subtitles" checked> ซับไตเติลไฮไลต์ทีละคำ</label>
+        <label class="row"><input type="checkbox" id="zoom" checked> ซูมเข้า-ออกตามจังหวะ</label>
+        <label class="row"><input type="checkbox" id="sfx" checked> เสียง Whoosh ตอนตัดช็อต</label>
+        <label class="row"><input type="checkbox" id="normalize_audio" checked> ปรับระดับเสียงให้เท่ากัน</label>
+      </div>
+      <h2 style="margin-top:18px">สไตล์ซับ</h2>
+      <div class="chips" id="styles">
+        <label class="chip"><input type="radio" name="subtitle_style" value="pop" checked><span><b style="font-size:18px">เด้ง<em style="color:#f5c400;font-style:normal">ทีละ</em>คำ</b><small>ตัวใหญ่ แบบคลิปไวรัล</small></span></label>
+        <label class="chip"><input type="radio" name="subtitle_style" value="karaoke"><span><b>ไฮไลต์<em style="color:#f5c400;font-style:normal">คำ</em>ที่พูด</b><small>ขึ้นทั้งวลี</small></span></label>
+        <label class="chip"><input type="radio" name="subtitle_style" value="box"><span><b style="background:#222;color:#fff;padding:0 6px;border-radius:4px">กล่อง<em style="color:#f5c400;font-style:normal">พื้น</em>หลัง</b><small>อ่านง่ายทุกพื้นภาพ</small></span></label>
+      </div>
+      <details style="margin-top:16px">
+        <summary>ตั้งค่าขั้นสูง</summary>
+        <div class="grid">
+          <label class="field">ภาษาที่พูด
+            <select id="language"><option value="th">ไทย</option><option value="en">English</option><option value="">ตรวจจับอัตโนมัติ</option></select>
+          </label>
+          <label class="field">โมเดลถอดเสียง (ใหญ่ = แม่นขึ้นแต่ช้าลง)
+            <select id="whisper_model">
+              <option value="thai" selected>Thonburian Whisper (ภาษาไทย แม่นที่สุด)</option>
+              <option value="large-v3-turbo">large-v3-turbo (หลายภาษา)</option>
+              <option value="small">small (เร็ว แต่ภาษาไทยผิดเยอะ)</option>
+            </select>
+          </label>
+          <label class="field">ระดับเสียงที่ถือว่าเงียบ (dB, 0 = อัตโนมัติ)
+            <input type="number" id="silence_db" value="0" step="1" max="0">
+          </label>
+          <label class="field">ตัดเมื่อเงียบนานกว่า (วินาที)
+            <input type="number" id="min_silence" value="0.5" step="0.1" min="0.2">
+          </label>
+          <label class="field">ระดับการซูม
+            <input type="number" id="zoom_amount" value="1.15" step="0.05" min="1.05" max="1.5">
+          </label>
+        </div>
+      </details>
+    </div>
+
+    <button id="go" type="submit" disabled>เริ่มตัดต่ออัตโนมัติ</button>
+  </form>
+
+  <div class="card hidden" id="status" style="margin-top:16px">
+    <h2 id="statusTitle">กำลังประมวลผล…</h2>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="msg" id="statusMsg"></div>
+  </div>
+
+  <div class="card hidden" id="results">
+    <h2>ผลลัพธ์</h2>
+    <div class="stats" id="stats"></div>
+    <div class="outs" id="outs"></div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let file = null;
+
+function setFile(f) {
+  file = f;
+  $("fileName").textContent = f ? `${f.name} (${(f.size / 1048576).toFixed(1)} MB)` : "ลากไฟล์มาวาง หรือคลิกเพื่อเลือก";
+  $("go").disabled = !f;
+}
+$("drop").onclick = () => $("file").click();
+$("file").onchange = e => setFile(e.target.files[0]);
+["dragover", "dragenter"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.remove("over"); }));
+$("drop").addEventListener("drop", e => e.dataTransfer.files[0] && setFile(e.dataTransfer.files[0]));
+
+function fmt(sec) { const m = Math.floor(sec / 60), s = Math.round(sec % 60); return `${m}:${String(s).padStart(2, "0")}`; }
+
+function collectOptions() {
+  const aspects = [...document.querySelectorAll("#aspects input:checked")].map(i => i.value);
+  const o = { aspects, reframe: $("reframe").value, target_seconds: Number($("target").value) || 0,
+              language: $("language").value, whisper_model: $("whisper_model").value,
+              subtitle_style: document.querySelector("input[name=subtitle_style]:checked").value };
+  for (const k of ["cut_silence", "remove_fillers", "subtitles", "zoom", "sfx", "normalize_audio"]) o[k] = $(k).checked;
+  for (const k of ["silence_db", "min_silence", "zoom_amount"]) o[k] = Number($(k).value);
+  return o;
+}
+
+$("form").onsubmit = async e => {
+  e.preventDefault();
+  const opts = collectOptions();
+  if (!opts.aspects.length) return alert("เลือกขนาดวิดีโออย่างน้อย 1 ขนาด");
+  $("go").disabled = true;
+  $("results").classList.add("hidden");
+  $("status").classList.remove("hidden");
+  $("statusTitle").textContent = "กำลังอัปโหลด…";
+  $("statusMsg").className = "msg";
+  $("barFill").style.width = "0";
+
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("options", JSON.stringify(opts));
+  try {
+    const r = await fetch("/api/jobs", { method: "POST", body: fd });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "อัปโหลดไม่สำเร็จ");
+    poll(data.id);
+  } catch (err) { showError(err.message); }
+};
+
+function showError(msg) {
+  $("statusTitle").textContent = "เกิดข้อผิดพลาด";
+  $("statusMsg").className = "err";
+  $("statusMsg").textContent = msg;
+  $("go").disabled = false;
+}
+
+async function poll(id) {
+  $("statusTitle").textContent = "กำลังประมวลผล…";
+  const r = await fetch(`/api/jobs/${id}`);
+  const job = await r.json();
+  $("barFill").style.width = job.progress + "%";
+  $("statusMsg").textContent = `${job.progress}% · ${job.message}`;
+  if (job.status === "error") return showError(job.message);
+  if (job.status === "done") return showResult(id, job.result);
+  setTimeout(() => poll(id), 1500);
+}
+
+function showResult(id, res) {
+  $("statusTitle").textContent = "เสร็จแล้ว 🎉";
+  $("go").disabled = false;
+  const saved = res.duration_in - res.duration_out;
+  $("stats").innerHTML = `
+    <div><b>${fmt(res.duration_in)} → ${fmt(res.duration_out)}</b><span>ความยาว</span></div>
+    <div><b>${fmt(saved)}</b><span>ตัดออก</span></div>
+    <div><b>${res.cuts}</b><span>จุดตัด</span></div>`;
+  if (res.warnings.length) $("stats").insertAdjacentHTML("beforeend", `<div class="err">${res.warnings.join("<br>")}</div>`);
+  $("outs").innerHTML = res.outputs.map(o => {
+    const v = `/api/jobs/${id}/files/${o.video}`;
+    const srt = o.srt ? `<a href="/api/jobs/${id}/files/${o.srt}" download>ดาวน์โหลด .srt</a>` : "";
+    return `<div class="out"><h2>${o.aspect}</h2><video src="${v}" controls playsinline></video>
+            <p><a href="${v}" download>ดาวน์โหลด MP4</a>${srt}</p></div>`;
+  }).join("");
+  $("results").classList.remove("hidden");
+}
+</script>
+</body>
+</html>

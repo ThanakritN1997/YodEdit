@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+imageio-ffmpeg>=0.5     # มี ffmpeg มาให้ ไม่ต้องติดตั้งแยก
+faster-whisper>=1.0     # ถอดเสียงเป็นข้อความ
+pythainlp>=5.0          # ตัดคำภาษาไทยสำหรับซับ
